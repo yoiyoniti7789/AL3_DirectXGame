@@ -8,11 +8,25 @@
 #include "Sprite.h"
 #include "ViewProjection.h"
 #include "WorldTransform.h"
-
+#include "DebugCamera.h"
 /// <summary>
 /// ゲームシーン
 /// </summary>
 class GameScene {
+
+private:
+	uint32_t textureHandle_ = 0;
+	Sprite* sprite_ = nullptr;
+
+	Model* model_ = nullptr;
+	WorldTransform worldTransform_;
+	ViewProjection viewProjection_;
+	DebugCamera* debugCamera_ = nullptr;
+
+	uint32_t soundDataHandle_ = 0;
+	uint32_t voiceHandle_ = 0;
+	
+    float inpuFloat3[3] = {0,0,0};
 
 public: // メンバ関数
 	/// <summary>
