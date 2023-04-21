@@ -26,6 +26,21 @@ public: // メンバ関数
 	~GameScene();
 
 	/// <summary>
+	/// BG（スプライト）
+	/// </summary>
+	uint32_t textureHandleBG_ = 0;
+	Sprite* spriteBG_ = nullptr;
+
+	///
+	/// ビュー＆ステージ
+	/// 
+	ViewProjection viewprojection_;
+
+	uint32_t textureHandleStage_ = 0;
+	Model* modelStage_ = nullptr;
+	WorldTransform worldTransformStage_;
+
+	/// <summary>
 	/// 初期化
 	/// </summary>
 	void Initialize();
