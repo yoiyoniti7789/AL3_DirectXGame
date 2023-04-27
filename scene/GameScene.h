@@ -40,6 +40,14 @@ public: // メンバ関数
 	Model* modelStage_ = nullptr;
 	WorldTransform worldTransformStage_;
 
+	///
+	///プレイヤー
+	///
+	uint32_t textureHandlePlayer_ = 0;
+	Model* modelPlayer_ = nullptr;
+	WorldTransform worldTransformPlayer_;
+
+	void PlayerUpdate();
 	/// <summary>
 	/// 初期化
 	/// </summary>
