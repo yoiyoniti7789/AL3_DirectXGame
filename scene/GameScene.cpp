@@ -2,6 +2,7 @@
 #include "TextureManager.h"
 #include <cassert>
 #include "MathUtilityForText.h"
+#include <time.h>
 
 GameScene::GameScene() {}
 
@@ -9,9 +10,9 @@ GameScene::~GameScene() {
 	delete spriteBG_; 
 	delete modelStage_;
 	delete modelPlayer_;
+	delete modelBeam_;
+	delete modelEnemy_;
 }
-
-
 
 void GameScene::Initialize() {
 
@@ -47,7 +48,21 @@ void GameScene::Initialize() {
 	modelPlayer_ = Model::Create();
 	worldTransformPlayer_.scale_ = {0.5f,0.5f,0.5f};
 	worldTransformPlayer_.Initialize();
+	// ビーム
+	textureHandleBeam_ = TextureManager::Load("beam.png");
+	modelBeam_ = Model::Create();
+	worldTransformBeam_.scale_ = {0.3f, 0.3f, 0.3f};
+	worldTransformBeam_.Initialize();
+	// エネミー
+	textureHandleEnemy_ = TextureManager::Load("enemy.png");
+	modelEnemy_ = Model::Create();
+	worldTransformEnemy_.scale_ = {0.5f, 0.5f, 0.5f};
+	worldTransformEnemy_.Initialize();
 
+	srand((unsigned int)time(NULL));
+
+	debugText_ = DebugText::GetInstance();
+	debugText_->Initialize();
 }
 void GameScene::PlayerUpdate() {
 	/// プレイヤー更新
@@ -66,9 +81,123 @@ void GameScene::PlayerUpdate() {
 	worldTransformPlayer_.translation_.x = max(worldTransformPlayer_.translation_.x,-4);
 	worldTransformPlayer_.translation_.x = min(worldTransformPlayer_.translation_.x, 4);
 }
+void GameScene::BeamUpdate() 
+{
+	BeamMove();
+	BeamBorn();
+	/// ビーム更新
+	worldTransformBeam_.matWorld_ = MakeAffineMatrix(
+	    worldTransformBeam_.scale_, 
+		worldTransformBeam_.rotation_,
+	    worldTransformBeam_.translation_);
+	worldTransformBeam_.TransferMatrix();
+}
+
+void GameScene::BeamMove() 
+{
+	if (beamFlag_ == true) 
+	{
+		worldTransformBeam_.rotation_.x += 0.1f;
+		worldTransformBeam_.translation_.z += 0.3f;
+
+		if (worldTransformBeam_.translation_.z >= 40.0f) {
+			beamFlag_ = false;
+		}
+	}
+}
+
+void GameScene::BeamBorn() 
+{
+	if (input_->TriggerKey(DIK_SPACE)&& beamFlag_ == false) 
+	{
+		worldTransformBeam_.translation_.x = worldTransformPlayer_.translation_.x;
+		worldTransformBeam_.translation_.z = worldTransformPlayer_.translation_.z;
+		 
+		beamFlag_ = true;
+	}
+}
+
+void GameScene::EnemyUpdate() 
+{
+	EnemyMove();
+	EnemyBorn();
+	/// エネミー更新
+	worldTransformEnemy_.matWorld_ = MakeAffineMatrix(
+	    worldTransformEnemy_.scale_, 
+		worldTransformEnemy_.rotation_,
+	    worldTransformEnemy_.translation_);
+	worldTransformEnemy_.TransferMatrix();
+}
+
+void GameScene::EnemyMove() 
+{ 
+	
+	if (enemyFlag_ == true) {
+		worldTransformEnemy_.rotation_.x -= 0.1f;
+		worldTransformEnemy_.translation_.z -= 0.5f;
+		if (worldTransformEnemy_.translation_.z <= -5.0f) {
+			enemyFlag_ = false;
+		}
+	}
+}
+
+void GameScene::EnemyBorn() 
+{
+	
+	if (enemyFlag_ == false) {
+		enemyFlag_ = true;
+
+		int x = rand() % 80;
+		float x2 = (float)x / 10 - 4;
+		worldTransformEnemy_.translation_.x = x2;
+
+		worldTransformEnemy_.translation_.z = 40.0f;
+	}
+}
+
+void GameScene::Collision() 
+{ 
+	CollisionPlayerEnemy();
+	CollisionBeamEnemy();
+}
+
+void GameScene::CollisionPlayerEnemy() 
+{ 
+	if (enemyFlag_ == true) 
+	{
+		float dx = abs(worldTransformPlayer_.translation_.x - worldTransformEnemy_.translation_.x);
+		float dz = abs(worldTransformPlayer_.translation_.z - worldTransformEnemy_.translation_.z);
+
+		if (dx < 1 && dz < 1) 
+		{
+			enemyFlag_ = false;
+			playerLife_ -= 1;
+		}
+	}
+}
+
+void GameScene::CollisionBeamEnemy() 
+{
+	if (enemyFlag_ == true) {
+		float dx = abs(worldTransformBeam_.translation_.x - worldTransformEnemy_.translation_.x);
+		float dz = abs(worldTransformBeam_.translation_.z - worldTransformEnemy_.translation_.z);
+
+		if (dx < 1 && dz < 1) {
+			enemyFlag_ = false;
+			beamFlag_ = false;
+			worldTransformBeam_.translation_.x = worldTransformPlayer_.translation_.x;
+			worldTransformBeam_.translation_.z = worldTransformPlayer_.translation_.z;
+			gameScore_ += 1;
+		}
+	}
+}
+
 void GameScene::Update() 
 {
 	PlayerUpdate();
+	BeamUpdate();
+	EnemyUpdate();
+	Collision();
 }
 
 void GameScene::Draw() {
@@ -100,7 +229,15 @@ void GameScene::Draw() {
 	modelStage_->Draw(worldTransformStage_,viewprojection_,textureHandleStage_);
 	///プレイヤー
 	modelPlayer_->Draw(worldTransformPlayer_,viewprojection_,textureHandlePlayer_);
-	
+	/// ビーム
+	if (beamFlag_ == true) 
+	{
+		modelBeam_->Draw(worldTransformBeam_, viewprojection_, textureHandleBeam_);
+	}
+	/// エネミー
+	if (enemyFlag_ == true) {
+		modelEnemy_->Draw(worldTransformEnemy_, viewprojection_, textureHandleEnemy_);
+	}
 
 	// 3Dオブジェクト描画後処理
 	Model::PostDraw();
@@ -113,7 +250,16 @@ void GameScene::Draw() {
 	/// <summary>
 	/// ここに前景スプライトの描画処理を追加できる
 	/// </summary>
+	/*debugText_->Print("AAA", 10, 10, 2);*/
+	debugText_->DrawAll();
+	//ゲームスコア
+	char str[100];
+	sprintf_s(str, "SCORE %d", gameScore_);
+	debugText_->Print(str,200,10,2);
 
+	char str1[100];
+	sprintf_s(str1, "LIFE %d", playerLife_);
+	debugText_->Print(str1, 880, 10, 2);
 	// スプライト描画後処理
 	Sprite::PostDraw();
 

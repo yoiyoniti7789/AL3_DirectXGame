@@ -8,6 +8,7 @@
 #include "Sprite.h"
 #include "ViewProjection.h"
 #include "WorldTransform.h"
+#include "DebugText.h"
 
 /// <summary>
 /// ゲームシーン
@@ -48,6 +49,50 @@ public: // メンバ関数
 	WorldTransform worldTransformPlayer_;
 
 	void PlayerUpdate();
+
+	///
+	/// ビーム
+	///
+	uint32_t textureHandleBeam_ = 0;
+	Model* modelBeam_ = nullptr;
+	WorldTransform worldTransformBeam_;
+
+	void BeamUpdate();
+
+	void BeamMove();
+
+	void BeamBorn();
+
+	bool beamFlag_ = false;
+
+	///
+	/// エネミー
+	///
+	uint32_t textureHandleEnemy_ = 0;
+	Model* modelEnemy_ = nullptr;
+	WorldTransform worldTransformEnemy_;
+
+	void EnemyUpdate();
+
+	void EnemyMove();
+
+	void EnemyBorn();
+
+	bool enemyFlag_ = false;
+
+	///
+	/// 衝突判定
+	///
+	
+	void Collision();
+	void CollisionPlayerEnemy();
+	void CollisionBeamEnemy();
+
+	DebugText* debugText_ = nullptr;
+
+	int gameScore_ = 0;
+	int playerLife_ = 3;
+
 	/// <summary>
 	/// 初期化
 	/// </summary>
